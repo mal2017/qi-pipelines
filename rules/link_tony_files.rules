@@ -1,0 +1,63 @@
+#; -*-makefile-*-
+
+"""
+Designed for use with crusader (TONY).
+Moves files stored elsewhere as links to current folder.
+Saves space and good for record keeping/sharing raw files with collabs
+because you can sftp the linked files.
+
+Requires at least the following in its config:
+
+assays:
+  [assayname]:
+    [samplename]:
+      bam: /path/to/samplename.sort.bam
+      fastq1: /path/to/samplename_matepair1.fastq.gz
+      fastq2: null
+      genome: [genome]
+      rxbam: null
+      bgbam: null
+      bgfastq1: null
+      bgfastq2: null
+      bgrxbam: null
+
+"""
+
+
+__author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
+__version__ = 1.0
+
+rule link_fastqs:
+	input:
+		lambda wildcards: expand("{fastq}",fastq=config["assays"][wildcards.assay][wildcards.sample]["fastq"+wildcards.mate])
+	output:
+		"{assay}/fastq/{sample}_{assay}_R{mate}.fastq.gz",
+	params:
+		bg = lambda wildcards: expand("{fastq}",fastq=config["assays"][wildcards.assay][wildcards.sample]["bgfastq"+wildcards.mate]) if config["assays"][wildcards.assay][wildcards.sample]["bgfastq"+wildcards.mate] else None,
+		bgout = "{assay}/fastq/{sample}_{assay}_INPUT_R{mate}.fastq.gz"
+	run:
+		shell("ln -s {input} {output[0]}")
+		if params.bg:
+			shell("ln -s {params.bg} {params.bgout}")
+
+
+rule link_bams:
+	input:
+		lambda wildcards: expand("{bam}",bam=config["assays"][wildcards.assay][wildcards.sample]["bam"])
+	output:
+		"{assay}/bam/{sample}_{assay}.sort.bam"
+	params:
+		bg = lambda wildcards: expand("{bam}",bam=config["assays"][wildcards.assay][wildcards.sample]["bgbam"]) if config["assays"][wildcards.assay][wildcards.sample]["bgbam"] else None,
+		rx = lambda wildcards: expand("{bam}",bam=config["assays"][wildcards.assay][wildcards.sample]["rxbam"]) if config["assays"][wildcards.assay][wildcards.sample]["rxbam"] else None,
+		bgrx = lambda wildcards: expand("{bam}",bam=config["assays"][wildcards.assay][wildcards.sample]["bgrxbam"]) if config["assays"][wildcards.assay][wildcards.sample]["bgrxbam"] else None,
+		bgout = "{assay}/bam/{sample}_{assay}_INPUT.sort.bam",
+		rxout = "{assay}/bam/{sample}_{assay}_RX.sort.bam",
+		bgrxout = "{assay}/bam/{sample}_{assay}_INPUT_RX.sort.bam"
+	run:
+		shell("ln -s {input} {output}")
+		if params.bg:
+			shell("ln -s {params.bg} {params.bgout}")
+		if params.rx:
+			shell("ln -s {params.rx} {params.rxout}")
+		if params.bgrx:
+			shell("ln -s {params.bgrx} {params.bgrxout}")
