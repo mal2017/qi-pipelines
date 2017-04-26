@@ -1,0 +1,43 @@
+#; -*-makefile-*-
+
+"""
+Looks for fastqs or symlinks to fastqs in project/RNA/fastq/.
+Requires installation of tophat2.
+
+Requires at least the following in its config:
+
+assays:
+  [assayname]:
+    [samplename]:
+      bam: /path/to/samplename.sort.bam
+      fastq1: /path/to/samplename_matepair1.fastq.gz
+      fastq2: null
+      genome: [genome]
+      rxbam: null
+      bgbam: null
+      bgfastq1: null
+      bgfastq2: null
+      bgrxbam: null
+
+options:
+  tophat2:
+    [species]: [your options here]
+
+"""
+
+
+__author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
+__version__ = 1.0
+
+rule call_tophat2:
+	input:
+		"RNA/fastq/{sample}_RNA_R1.fastq.gz"
+	output:
+		"RNA/tophat2/{sample}/accepted_hits.bam", dir="RNA/tophat2/{sample}/"
+	params:
+		pair = lambda wildcards: config["assays"]["RNA"][wildcards.sample].get("fastq2",""),
+		genome = lambda wildcards: config["assays"]["RNA"][wildcards.sample]["genome"],
+		custom = lambda wildcards: config["options"]["tophat2"][config["assays"]["RNA"][wildcards.sample]["genome"]]
+	run:
+		cmd = "tophat2 -o {outdir} {options} {fq} {fqpair}".format(outdir=output.dir,options=params.custom,fq=input,fqpair=params.pair)
+		shell(cmd)
