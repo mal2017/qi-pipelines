@@ -3,6 +3,7 @@
 """
 Looks for fastqs or symlinks to fastqs in project/RNA/fastq/.
 Requires installation of tophat2.
+Rrequires insatallation of samtools.
 
 Requires at least the following in its config:
 
@@ -31,9 +32,9 @@ __version__ = 1.0
 
 rule call_tophat2:
 	input:
-		"RNA/fastq/{sample}_RNA_R1.fastq.gz"
+		"RNA/fastq/{genome}/{sample}_RNA_R1.fastq.gz"
 	output:
-		"RNA/tophat2/{sample}/accepted_hits.bam", dir="RNA/tophat2/{sample}/"
+		"RNA/tophat2/{genome}/{sample}/accepted_hits.bam", dir="RNA/tophat2/{genome}/{sample}/"
 	params:
 		pair = lambda wildcards: config["assays"]["RNA"][wildcards.sample].get("fastq2",""),
 		genome = lambda wildcards: config["assays"]["RNA"][wildcards.sample]["genome"],
@@ -41,3 +42,15 @@ rule call_tophat2:
 	run:
 		cmd = "tophat2 -o {outdir} {options} {fq} {fqpair}".format(outdir=output.dir,options=params.custom,fq=input,fqpair=params.pair)
 		shell(cmd)
+
+rule organize_tophat2_bams:
+	input:
+		"RNA/tophat2/{genome}/{sample}/accepted_hits.bam"
+	output:
+		"RNA/bam/{genome}/{sample}.tophat2.bam",
+		"RNA/bam/{genome}/{sample}.tophat2.bam.bai"
+	shell:
+		"ln -s {input} {output[0]} && "
+		"samtools index {input} {output[1]}"
+
+

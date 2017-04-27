@@ -31,12 +31,12 @@ rule link_fastqs:
 	input:
 		lambda wildcards: expand("{fastq}",fastq=config["assays"][wildcards.assay][wildcards.sample]["fastq"+wildcards.mate])
 	output:
-		"{assay}/fastq/{sample}_{assay}_R{mate}.fastq.gz",
+		"{assay}/fastq/{genome}/{sample}_{assay}_R{mate}.fastq.gz"
 	params:
 		bg = lambda wildcards: config["assays"][wildcards.assay][wildcards.sample].get("bgfastq"+wildcards.mate,None),
-		bgout = "{assay}/fastq/{sample}_{assay}_INPUT_R{mate}.fastq.gz"
+		bgout = "{assay}/fastq/{genome}/{sample}_{assay}_INPUT_R{mate}.fastq.gz"
 	run:
-		shell("ln -s {input} {output[0]}")
+		shell("ln -s {input} {output}")
 		if params.bg:
 			shell("ln -s {params.bg} {params.bgout}")
 
@@ -45,14 +45,14 @@ rule link_bams:
 	input:
 		lambda wildcards: expand("{bam}",bam=config["assays"][wildcards.assay][wildcards.sample]["bam"])
 	output:
-		"{assay}/bam/{sample}_{assay}.sort.bam"
+		"{assay}/bam/{genome}/{sample}_{assay}.import.sort.bam"
 	params:
 		bg = lambda wildcards: config["assays"][wildcards.assay][wildcards.sample].get("bgbam",None),
 		rx = lambda wildcards: config["assays"][wildcards.assay][wildcards.sample].get("rxbam",None),
 		bgrx = lambda wildcards: config["assays"][wildcards.assay][wildcards.sample].get("bgrxbam",None),
-		bgout = "{assay}/bam/{sample}_{assay}_INPUT.sort.bam",
-		rxout = "{assay}/bam/{sample}_{assay}_RX.sort.bam",
-		bgrxout = "{assay}/bam/{sample}_{assay}_INPUT_RX.sort.bam"
+		bgout = "{assay}/bam/{genome}/{sample}_{assay}_INPUT.import.sort.bam",
+		rxout = "{assay}/bam/{genome}/{sample}_{assay}_RX.import.sort.bam",
+		bgrxout = "{assay}/bam/{genome}/{sample}_{assay}_INPUT_RX.import.sort.bam"
 	run:
 		shell("ln -s {input} {output}")
 		if params.bg:
