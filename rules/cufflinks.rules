@@ -1,0 +1,66 @@
+#; -*-makefile-*-
+
+"""
+assumes tophat2 output.
+requires cuffquant is installed.
+
+For replicates, make sure
+
+Requires at least the following in its config:
+
+assays:
+  [assayname]:
+    [samplename]:
+      bam: /path/to/samplename.sort.bam
+      fastq1: /path/to/samplename_matepair1.fastq.gz
+      fastq2: null
+      genome: [genome]
+      rxbam: null
+      bgbam: null
+      bgfastq1: null
+      bgfastq2: null
+      bgrxbam: null
+
+options:
+  cuffquant:
+    [species]: [your options here]
+
+groups:
+- CELLTYPE1_TREATMENT1
+- CELLTYPE1_TREATMENT2
+- CELLTYPE2_TREATMENT1
+- CELLTYPE2_TREATMENT2
+etc...
+
+"""
+
+
+__author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
+__version__ = 1.0
+
+
+rule run_cuffquant:
+	input:
+		"RNA/bam/{genome}/{sample}.{aligner}.sort.bam",
+		"RNA/bam/{genome}/{sample}.{aligner}.sort.bam.bai"
+	output:
+		"RNA/cufflinks/{genome}/cuffquant/{sample}-{aligner}/abundances.cxb",
+		dir="RNA/cufflinks/{genome}/cuffquant/{sample}-{aligner}/"
+	params:
+		custom = lambda wildcards: config["options"]["cuffquant"][wildcards.genome]
+	shell:
+		"cuffquant {params.custom} -o {output.dir} {input[0]}"
+
+
+## chances this works first shot are pretty much zero
+rule run_cuffnorm:
+	input:
+		lambda wildcards: expand("RNA/cufflinks/cuffquant/{grp}_{rep}-tophat2/abundances.cxb",grp=config["groups"][wildcards.genome],rep=wildcards.rep)
+	output:
+		"RNA/cufflinks/cuffnorm/{genome}/genes.fpkm_table",dir="RNA/cufflinks/cuffnorm/{genome}/"
+	params:
+		groups = lambda wildcards: config["groups"][wildcards.genome],
+	threads: 12
+
+	shell:
+		"cuffnorm -p {threads} -o {output.dir} -l {params.groups}"

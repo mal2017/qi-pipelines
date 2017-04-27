@@ -47,8 +47,10 @@ rule organize_tophat2_bams:
 	input:
 		"RNA/tophat2/{genome}/{sample}/accepted_hits.bam"
 	output:
-		"RNA/bam/{genome}/{sample}.tophat2.bam",
-		"RNA/bam/{genome}/{sample}.tophat2.bam.bai"
+		"RNA/bam/{genome}/{sample}.tophat2.sort.bam",
+		"RNA/bam/{genome}/{sample}.tophat2.sort.bam.bai"
+	message:
+		"Moving to the bam folder. Don't worry, tophat2 automatically sorts its bam."
 	shell:
 		"ln -s {input} {output[0]} && "
 		"samtools index {input} {output[1]}"
