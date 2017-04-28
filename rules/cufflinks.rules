@@ -53,14 +53,32 @@ rule run_cuffquant:
 
 
 ## chances this works first shot are pretty much zero
+
 rule run_cuffnorm:
 	input:
-		lambda wildcards: expand("RNA/cufflinks/cuffquant/{grp}_{rep}-tophat2/abundances.cxb",grp=config["groups"][wildcards.genome],rep=wildcards.rep)
+		lambda wildcards: expand("RNA/cufflinks/{g}/cuffquant/{s}-{a}/abundances.cxb",g=wildcards.genome,s=config["assays"]["RNA"].keys(),a=wildcards.aligner)
 	output:
-		"RNA/cufflinks/cuffnorm/{genome}/genes.fpkm_table",dir="RNA/cufflinks/cuffnorm/{genome}/"
+		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/genes.fpkm_table",dir="RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/"
 	params:
-		groups = lambda wildcards: config["groups"][wildcards.genome],
-	threads: 12
-
+		## edit the following line if this fails
+		groups = lambda wildcards: ",".join([x for x in config["groups"][wildcards.genome][wildcards.analysis] if any([x in y for y in config["assays"]["RNA"].keys()]) ]),
+		grpreps = lambda wildcards: " ".join([",".join(["RNA/cufflinks/"+wildcards.genome+"/cuffquant/"+y+"-"+wildcards.aligner+"/abundances.cxb" for y in config["assays"]["RNA"].keys() if x in y]) for x in config["groups"][wildcards.genome][wildcards.analysis] if any([x in y for y in config["assays"]["RNA"].keys()]) ]),
+		options = lambda wildcards: config["options"]["cuffnorm"][wildcards.genome]
+	message:
+		"Running cuffnorm now."
 	shell:
-		"cuffnorm -p {threads} -o {output.dir} -l {params.groups}"
+		"cuffnorm -o {output.dir} -L {params.groups} {params.options} {params.grpreps}"
+
+
+rule semenkovich_norm:
+	input:
+		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/genes.fpkm_table"
+	output:
+		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/semenkovich_norm/{analysis}_all_fpkm_means.txt",
+		dir="RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/semenkovich_norm/"
+	params:
+		groups = lambda wildcards: ",".join([x for x in config["groups"][wildcards.genome][wildcards.analysis] if any([x in y for y in config["assays"]["RNA"].keys()]) ]),
+		options = lambda wildcards: config["options"]["semenkovich_norm"][wildcards.genome]
+	shell:
+		"/ark/home/ml290/miniconda2/envs/snakestuff/bin/R --no-save {input} {output.dir} {wildcards.analysis} {params.groups} {params.options} "
+		"< /ark/home/cl512/pipeline/normalizeRNASeq.R"

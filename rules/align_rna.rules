@@ -30,6 +30,10 @@ options:
 __author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
 __version__ = 1.0
 
+
+from pathlib import Path
+
+
 rule call_tophat2:
 	input:
 		"RNA/fastq/{genome}/{sample}_RNA_R1.fastq.gz"
@@ -43,16 +47,28 @@ rule call_tophat2:
 		cmd = "tophat2 -o {outdir} {options} {fq} {fqpair}".format(outdir=output.dir,options=params.custom,fq=input,fqpair=params.pair)
 		shell(cmd)
 
-rule organize_tophat2_bams:
+rule index_tophat2_bam:
 	input:
 		"RNA/tophat2/{genome}/{sample}/accepted_hits.bam"
+	output:
+		"RNA/tophat2/{genome}/{sample}/accepted_hits.bam.bai"
+
+	message:
+		"Indexing your bam now."
+	shell:
+		"samtools index {input} {output}"
+
+rule organize_tophat2_output:
+	input:
+		lambda wildcards: expand("RNA/tophat2/{g}/{s}/accepted_hits.bam",g=wildcards.genome,s=wildcards.sample),
+		lambda wildcards: expand("RNA/tophat2/{g}/{s}/accepted_hits.bam.bai",g=wildcards.genome,s=wildcards.sample)
 	output:
 		"RNA/bam/{genome}/{sample}.tophat2.sort.bam",
 		"RNA/bam/{genome}/{sample}.tophat2.sort.bam.bai"
 	message:
-		"Moving to the bam folder. Don't worry, tophat2 automatically sorts its bam."
-	shell:
-		"ln -s {input} {output[0]} && "
-		"samtools index {input} {output[1]}"
-
-
+		"Creating symlink in RNA/bam/[genome] folder. Reminder: tophat2 autosorts its bams."
+	run:
+		rp = str(Path(input[0]).resolve())
+		rpidx = str(Path(input[1]).resolve())
+		shell("ln -s {file} {link}".format(file=rp,link=output[0]))
+		shell("ln -s {file} {link}".format(file=rpidx,link=output[1]))

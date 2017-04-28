@@ -27,6 +27,7 @@ assays:
 __author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
 __version__ = 1.0
 
+
 rule link_fastqs:
 	input:
 		lambda wildcards: expand("{fastq}",fastq=config["assays"][wildcards.assay][wildcards.sample]["fastq"+wildcards.mate])
