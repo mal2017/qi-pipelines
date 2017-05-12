@@ -1,0 +1,63 @@
+#; -*-makefile-*-
+"""
+These rules are for calling rose.
+
+It assumes that rose and bamliquidator are installed and functional
+and that the path for the rose family of scripts is [/ark/home/cl512/pipeline]
+or specified in the config file.
+
+"""
+
+__author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
+__version__ = 1.0
+
+shell.executable("/bin/bash")
+
+import os
+import snakemake.utils
+import subprocess
+def background(wc):
+	input = config['assays'][wc.assay][wc.sample+"_"+wc.library]['input']
+	bam = config['assays'][wc.assay][input]['bam']
+	if not bam:
+		return ''
+	else:
+		control = "-c " + bam
+		return control
+
+def make_and_return_dirs(anypath):
+	snakemake.utils.makedirs(anypath)
+	return anypath
+
+
+rule call_rose2:
+	input:
+		"{assay}/{peakcaller}/{sample}_{library}/{sample}_{library}_peaks.bed",
+		lambda wildcards: config['assays'][wildcards.assay][wildcards.sample+"_"+wildcards.library]['bam']
+	output:
+		"{assay}/rose2/{sample}_{library}/{peakcaller}_peaks/{sample}_{library}_ROSE/{sample}_{library}_peaks_AllEnhancers.table.txt",
+		"{assay}/rose2/{sample}_{library}/{peakcaller}_peaks/{sample}_{library}_ROSE/{sample}_{library}_peaks_Plot_points.png",
+		"{assay}/rose2/{sample}_{library}/{peakcaller}_peaks/{sample}_{library}_ROSE/{sample}_{library}_peaks_AllEnhancers_ENHANCER_TO_GENE.txt",
+		"{assay}/rose2/{sample}_{library}/{peakcaller}_peaks/{sample}_{library}_ROSE/{sample}_{library}_peaks_AllEnhancers_GENE_TO_ENHANCER.txt"
+	params:
+		outdir= lambda wildcards: make_and_return_dirs("{a}/rose2/{s}_{l}/{p}_peaks/{s}_{l}_ROSE/".format(a=wildcards.assay,s=wildcards.sample,p=wildcards.peakcaller,l=wildcards.library)),
+		genome= lambda wildcards: config['assays'][wildcards.assay][wildcards.sample+"_"+wildcards.library]['genome'].upper(),
+		rosepath= config.get("rose_package_dir","/ark/home/cl512/pipeline"),
+		background = lambda wildcards: background(wildcards),
+		cwd = os.getcwd(),
+		assay_params = lambda wildcards: config['assays'][wildcards.assay].get("rose2_params","-t 2500"),
+		blacklist = lambda wildcards: config['assays'][wildcards.assay].get("blacklist","/raider/index/{g}/Masks/{g}_encode_blacklist.bed".format(g=rules.call_rose2.params.genome(wildcards).lower()))
+	log:
+		"{assay}/rose2/{sample}/{peakcaller}_peaks/{sample}_ROSE/rose2_{sample}.log"
+	message:
+		"Now running rose2."
+
+
+	shell:
+		"shopt -s expand_aliases \n"
+		"alias python=python2.7 \n"
+		"cd {params.rosepath};python ROSE2_main.py -i {params.cwd}/{input[0]} {params.background} -r {input[1]} -o {params.cwd}/{params.outdir} "
+		"--mask {params.blacklist} -g {params.genome} {params.assay_params} 2> {params.cwd}/{log}\n"
+		"python ROSE2_geneMapper.py -i {params.cwd}/{output[0]} -g {params.genome} -o {params.cwd}/{params.outdir}"
+
+

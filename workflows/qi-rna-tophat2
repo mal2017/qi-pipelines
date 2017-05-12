@@ -1,0 +1,40 @@
+#; -*-makefile-*-
+shell.executable("/bin/bash")
+
+
+"""
+Naming convention:
+
+CELLTYPE_TREATMENT_REPLICATE_ASSAY
+
+Celltype should correspond exactly to all paired assay samples,
+ie, MM1S_DMSO_1_RNA. This allows automated integration of paired data.
+
+
+requires the following config file:
+
+"""
+
+
+
+
+
+
+include: "../rules/link_tony_files.rules"
+include: "../rules/align_rna.rules"
+include: "../rules/cufflinks.rules"
+
+rule qi_rna_tophat2:
+	input:
+#		"RNA/cufflinks/hg19/cuffnorm/lines/semenkovich_norm/lines_all_fpkm_means.txt",
+#		"RNA/cufflinks/hg19/cuffnorm/lines/genes.fpkm_table",
+		expand("RNA/cufflinks/hg19/cuffquant/{sample}/abundances.cxb",sample=config["assays"]["RNA"].keys()),
+"""
+# intermediate target files for troubleshooting
+"RNA/cufflinks/hg19/cuffnorm/lines/genes.fpkm_table",
+#expand("RNA/fastq/{genome}/{sample}_RNA_R1.fastq.gz",sample=config["assays"]["RNA"].keys(),genome=[config["assays"]["RNA"][x]["genome"] for x in config["assays"]["RNA"].keys()]),
+#expand("RNA/bam/{genome}/{sample}_RNA.import.sort.bam",sample=config["assays"]["RNA"].keys(),genome=[config["assays"]["RNA"][x]["genome"] for x in config["assays"]["RNA"].keys()]),
+#expand("RNA/tophat2/{genome}/{sample}/accepted_hits.bam",sample=config["assays"]["RNA"].keys(),genome=[config["assays"]["RNA"][x]["genome"] for x in config["assays"]["RNA"].keys()]),
+#expand("RNA/bam/{genome}/{sample}.tophat2.sort.bam",sample=config["assays"]["RNA"].keys(),genome=[config["assays"]["RNA"][x]["genome"] for x in config["assays"]["RNA"].keys()]),
+#expand("RNA/cufflinks/hg19/cuffquant/{sample}/abundances.cxb",sample=config["assays"]["RNA"].keys()),
+"""

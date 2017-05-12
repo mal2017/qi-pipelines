@@ -1,0 +1,51 @@
+#; -*-makefile-*-
+shell.executable("/bin/bash")
+
+"""
+
+
+assumes tophat2 output.
+requires cuffquant is installed.
+
+===============IMPORTANT===================
+Follow this naming convention:
+CELLTYPE_TREATMENT_REP#_ASSAY
+-all caps
+-include a treatment even if there isnt one. eg. an untreated chip,
+	use NOTREAT or TUMOR or something.
+-ASSAY means, for example, RNA or H3K27AC or BRD4 or ATAC. Different IPs count
+	as different assays.
+
+
+Requires at least the following in its config:
+
+assays:
+  [assayname]:
+    [samplename]:
+      bam: /path/to/samplename.sort.bam
+      fastq1: /path/to/samplename_matepair1.fastq.gz
+      fastq2: null
+      genome: [genome]
+      rxbam: null
+      bgbam: null
+      bgfastq1: null
+      bgfastq2: null
+      bgrxbam: null
+
+options:
+  cuffquant:
+    [species]: [your options here]
+
+groups:
+- CELLTYPE1_TREATMENT1
+- CELLTYPE1_TREATMENT2
+
+"""
+
+rule target:
+	input:
+		expand("{assay}/macs14/{s}/{s}_peaks.bed",assay=["H3K27Ac"],s=[x for x in config["assays"]["H3K27Ac"].keys() if 'input' not in x]),
+
+
+
+

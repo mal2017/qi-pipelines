@@ -1,0 +1,55 @@
+#; -*-makefile-*-
+shell.executable("/bin/bash")
+
+"""
+
+
+assumes tophat2 output.
+requires cuffquant is installed.
+
+===============IMPORTANT=====================================
+FOLLOW THIS NAMING CONVENTION TO KEEP EVERYTHING CONSISTENT:
+
+CELLTYPE_TREATMENT_REPLICATE
+
+- Please do not use assay names in the sample name. For example,
+if you have H3K27AC samples, put them in the config under H3K27AC
+rather than naming them SAMPLE1_TREAT1_H3K27AC. This allows the
+script to derive this info from filepaths and filenames.
+
+=============================================================
+
+Requires at least the following in its config:
+
+assays:
+  [assayname]:
+    [samplename]:
+      bam: /path/to/samplename.sort.bam
+      fastq1: /path/to/samplename_matepair1.fastq.gz
+      fastq2: null
+      genome: [genome]
+      rxbam: null
+      bgbam: null
+      bgfastq1: null
+      bgfastq2: null
+      bgrxbam: null
+
+options:
+  cuffquant:
+    [species]: [your options here]
+
+groups:
+- CELLTYPE1_TREATMENT1
+- CELLTYPE1_TREATMENT2
+
+"""
+include: "../rules/link_tony_files.rules"
+
+rule target:
+	input:
+		expand("H3K27AC/fastq/{g}/{s}/{s}_peaks.bed",assay=["H3K27Ac"],s=[x for x in config["assays"]["H3K27Ac"].keys() if 'input' not in x]),
+		expand("H3K27AC/macs14/{g}/{s}/{s}_peaks.bed",assay=["H3K27Ac"],s=[x for x in config["assays"]["H3K27Ac"].keys() if 'input' not in x]),
+
+
+
+

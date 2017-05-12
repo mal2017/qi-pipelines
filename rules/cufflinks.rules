@@ -41,11 +41,11 @@ __version__ = 1.0
 
 rule run_cuffquant:
 	input:
-		"RNA/bam/{genome}/{sample}.{aligner}.sort.bam",
-		"RNA/bam/{genome}/{sample}.{aligner}.sort.bam.bai"
+		"RNA/bam/{genome}/{sample}.tophat2.sort.bam",
+		"RNA/bam/{genome}/{sample}.tophat2.sort.bam.bai"
 	output:
-		"RNA/cufflinks/{genome}/cuffquant/{sample}-{aligner}/abundances.cxb",
-		dir="RNA/cufflinks/{genome}/cuffquant/{sample}-{aligner}/"
+		"RNA/cufflinks/{genome}/cuffquant/{sample}/abundances.cxb",
+		dir="RNA/cufflinks/{genome}/cuffquant/{sample}/"
 	params:
 		custom = lambda wildcards: config["options"]["cuffquant"][wildcards.genome]
 	shell:
@@ -56,29 +56,33 @@ rule run_cuffquant:
 
 rule run_cuffnorm:
 	input:
-		lambda wildcards: expand("RNA/cufflinks/{g}/cuffquant/{s}-{a}/abundances.cxb",g=wildcards.genome,s=config["assays"]["RNA"].keys(),a=wildcards.aligner)
+		lambda wildcards: expand("RNA/cufflinks/{g}/cuffquant/{s}/abundances.cxb",g=wildcards.genome,s=config["assays"]["RNA"].keys())
 	output:
-		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/genes.fpkm_table",dir="RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/"
+		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/genes.fpkm_table",dir="RNA/cufflinks/{genome}/cuffnorm/{analysis}/"
 	params:
 		## edit the following line if this fails
 		groups = lambda wildcards: ",".join([x for x in config["groups"][wildcards.genome][wildcards.analysis] if any([x in y for y in config["assays"]["RNA"].keys()]) ]),
-		grpreps = lambda wildcards: " ".join([",".join(["RNA/cufflinks/"+wildcards.genome+"/cuffquant/"+y+"-"+wildcards.aligner+"/abundances.cxb" for y in config["assays"]["RNA"].keys() if x in y]) for x in config["groups"][wildcards.genome][wildcards.analysis] if any([x in y for y in config["assays"]["RNA"].keys()]) ]),
+		grpreps = lambda wildcards: " ".join([",".join(["RNA/cufflinks/"+wildcards.genome+"/cuffquant/"+y+"/abundances.cxb" for y in config["assays"]["RNA"].keys() if x in y and y not in config["options"]["cuffnorm"].get("exclude",[""])]) for x in config["groups"][wildcards.genome][wildcards.analysis] if any([x in z for z in config["assays"]["RNA"].keys()]) ]),
 		options = lambda wildcards: config["options"]["cuffnorm"][wildcards.genome]
 	message:
 		"Running cuffnorm now."
+	threads:
+		24
 	shell:
-		"cuffnorm -o {output.dir} -L {params.groups} {params.options} {params.grpreps}"
+		"cuffnorm -p {threads} -o {output.dir} -L {params.groups} {params.options} {params.grpreps}"
 
 
 rule semenkovich_norm:
 	input:
-		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/genes.fpkm_table"
+		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/genes.fpkm_table"
 	output:
-		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/semenkovich_norm/{analysis}_all_fpkm_means.txt",
-		dir="RNA/cufflinks/{genome}/cuffnorm/{analysis}/{aligner}/semenkovich_norm/"
+		"RNA/cufflinks/{genome}/cuffnorm/{analysis}/semenkovich_norm/{analysis}_all_fpkm_means.txt",
+		dir="RNA/cufflinks/{genome}/cuffnorm/{analysis}/semenkovich_norm/"
 	params:
 		groups = lambda wildcards: ",".join([x for x in config["groups"][wildcards.genome][wildcards.analysis] if any([x in y for y in config["assays"]["RNA"].keys()]) ]),
 		options = lambda wildcards: config["options"]["semenkovich_norm"][wildcards.genome]
 	shell:
 		"/ark/home/ml290/miniconda2/envs/snakestuff/bin/R --no-save {input} {output.dir} {wildcards.analysis} {params.groups} {params.options} "
-		"< /ark/home/cl512/pipeline/normalizeRNASeq.R"
+		"< /ark/home/ml290/temp/normalizeRNASeq.R"
+		#"< /ark/home/cl512/pipeline/normalizeRNASeq.R"
+

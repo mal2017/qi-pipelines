@@ -1,0 +1,30 @@
+#; -*-makefile-*-
+shell.executable("/bin/bash")
+
+
+"""
+Naming convention:
+
+CELLTYPE_TREATMENT_REPLICATE_ASSAY
+
+Celltype should correspond exactly to all paired assay samples,
+ie, MM1S_DMSO_1_RNA. This allows automated integration of paired data.
+
+
+requires the following config file:
+
+"""
+
+
+
+
+
+
+include: "../rules/link_tony_files.rules"
+include: "../rules/salmon.rules"
+
+rule qi_rna_salmon:
+	input:
+		expand("RNA/salmon/hg19/quants/{sample}/quant.genes.sf",sample=config["assays"]["RNA"].keys())
+
+

@@ -1,0 +1,34 @@
+#; -*-makefile-*-
+"""
+These rules are for calling rose.
+It assumes that rose and bamliquidator are installed and functional
+and that the path for the rose family of scripts is [/ark/home/cl512/pipeline]
+or specified in the config file.                                                                                                                                                                   
+"""
+
+__author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
+__version__ = 1.0
+
+shell.executable("/bin/bash")
+
+include: "call_rose.rules"
+
+def mkdir(anypath):
+        snakemake.utils.makedirs(anypath)
+        return anypath
+
+rule call_crc2:
+	input:
+		"{assay}/rose2/{sample}_{library}/{peakcaller}_peaks/{sample}_{library}_ROSE/{sample}_{library}_peaks_AllEnhancers.table.txt",
+		lambda wildcards: config["assays"][wildcards.assay][wildcards.sample+"_"+wildcards.library]["bam"]
+	output:
+		"{assay}/crc2/{sample}_{library}/{peakcaller}_peaks/{sample}_{library}_CRC/{sample}_{library}_EDGE_LIST.txt"
+	params:
+		rosepath= config.get("rose_package_dir","/ark/home/cl512/pipeline"),
+		genome=lambda wildcards: config["assays"][wildcards.assay][wildcards.sample+"_"+wildcards.library]["genome"],
+		outdir=lambda wildcards: "{a}/crc2/{s}_{l}/{pc}_peaks/{s}_{l}_CRC/".format(a=wildcards.assay,s=wildcards.sample,l=wildcards.library,pc=wildcards.peakcaller),
+		crc2_params= lambda wildcards: config["assays"][wildcards.assay].get("crc2_params","")
+	log:
+		"{params.output}/{sample}_{library}.log"
+	shell:
+		"/usr/bin/python {params.rosepath}/CRC2_cyl.py -e {input[0]} -b {input[1]} -g {params.genome} -o {params.outdir} -n {wildcards.sample}_{wildcards.library} {params.crc2_params} 2> {log}"

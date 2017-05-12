@@ -1,0 +1,54 @@
+#; -*-makefile-*-
+
+"""
+assumes tophat2 output.
+requires cuffquant is installed.
+
+For replicates, make sure
+
+Requires at least the following in its config:
+
+assays:
+  [assayname]:
+    [samplename]:
+      bam: /path/to/samplename.sort.bam
+      fastq1: /path/to/samplename_matepair1.fastq.gz
+      fastq2: null
+      genome: [genome]
+      rxbam: null
+      bgbam: null
+      bgfastq1: null
+      bgfastq2: null
+      bgrxbam: null
+
+options:
+  cuffquant:
+    [species]: [your options here]
+
+groups:
+  hg19:
+    analysisname:
+    - CELLTYPE1_TREATMENT1
+    - CELLTYPE1_TREATMENT2
+    - CELLTYPE2_TREATMENT1
+    - CELLTYPE2_TREATMENT2
+etc...
+
+"""
+
+
+__author__ = "Matt Lawlor (matt.a.lawlor@gmail.com)"
+__version__ = 1.0
+
+
+rule run_salmon_quant_sereads:
+	input:
+		"RNA/fastq/{genome}/{sample}_RNA_R1.fastq.gz"
+	output:
+		"RNA/salmon/{genome}/quants/{sample}/quant.genes.sf",dir="RNA/salmon/{genome}/quants/{sample}/"
+	params:
+		options = config["options"]["salmon_quant_sereads"]["hg19"]
+	message:
+		"Running salmon quant on unaligned reads with following options: {params.options}"
+	shell:
+		"salmon quant -r {input} {params.options} -o {output.dir}"
